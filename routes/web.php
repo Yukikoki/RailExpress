@@ -6,9 +6,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [TicketController::class, 'index'])->name('home');
 
-// Route bawaan Breeze
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return redirect()->route('tickets.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -18,18 +17,22 @@ Route::middleware('auth')->group(function () {
 });
 
 // --- ROUTE RAILEXPRESS ---
-
-// Pencarian tiket bisa diakses publik
 Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
-Route::get('/tickets/search', [TicketController::class, 'search'])->name('tickets.search');
+Route::get('/tickets/search', [TicketController::class, 'index'])->name('tickets.search');
 
-// Prosedur booking & pembayaran wajib login
 Route::middleware('auth')->group(function () {
-    Route::get('/tickets/{schedule}/select-seat', [TicketController::class, 'selectSeats'])->name('tickets.selectSeat');
-    Route::post('/tickets/book', [TicketController::class, 'store'])->name('tickets.store');
+    // Gunakan prefix jika ingin URL lebih terstruktur, misal: /tickets/1/passengers
+    Route::controller(TicketController::class)->group(function () {
+        Route::get('/tickets/{schedule}/passengers', 'inputPassengers')->name('tickets.passengers');
+        Route::post('/tickets/{schedule}/passengers', 'processPassengers')->name('tickets.processPassengers');
 
-    Route::get('/booking/{id}', [TicketController::class, 'show'])->name('booking.show');
-    Route::post('/booking/{id}/pay', [TicketController::class, 'pay'])->name('booking.pay');
+        Route::get('/tickets/{schedule}/select-seat', 'selectSeats')->name('tickets.selectSeat');
+        Route::post('/tickets/book', 'store')->name('tickets.store');
+
+        Route::get('/booking/{id}', 'show')->name('booking.show');
+        Route::post('/booking/{id}/pay', 'pay')->name('booking.pay');
+        Route::post('/booking/{id}/cancel', [TicketController::class, 'cancel'])->name('booking.cancel');
+    });
 });
 
 require __DIR__.'/auth.php';

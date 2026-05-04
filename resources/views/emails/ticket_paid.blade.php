@@ -52,7 +52,11 @@
                     </div>
                     <div style="text-align: right;">
                         <div class="label">Nomor Kursi</div>
-                        <div class="value" style="color: #4f46e5;">{{ $booking->seat->carriage->name }} - {{ $booking->seat->seat_number }}</div>
+                        <div class="value" style="color: #4f46e5;">
+                            @foreach($booking->passengers as $passenger)
+                                {{ $passenger->seat_number }}{{ !$loop->last ? ', ' : '' }}
+                            @endforeach
+                        </div>
                     </div>
                 </div>
 

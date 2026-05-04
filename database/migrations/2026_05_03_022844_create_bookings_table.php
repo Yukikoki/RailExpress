@@ -9,16 +9,15 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('bookings', function (Illuminate\Database\Schema\Blueprint $table) {
+        Schema::create('bookings', function (Blueprint $table) {
             $table->id();
             $table->string('booking_code')->unique();
-            $table->foreignId('user_id')->constrained();
-            $table->foreignId('schedule_id')->constrained();
-            $table->foreignId('seat_id')->constrained();
-            // Pakai string saja agar tidak kena "Data truncated" lagi
-            $table->string('status')->default('pending');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('schedule_id')->constrained()->onDelete('cascade');
+            $table->integer('total_price'); // Pastikan kolom ini ADA agar tidak Rp 0
+            $table->enum('status', ['pending', 'success', 'cancelled'])->default('pending');
             $table->timestamps();
         });
     }

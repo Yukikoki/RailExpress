@@ -19,11 +19,13 @@ class Schedule extends Model
         return $this->belongsTo(Train::class);
     }
 
-    public function originStation() {
+    public function originStation()
+    {
         return $this->belongsTo(Station::class, 'origin_station_id');
     }
 
-    public function destinationStation() {
+    public function destinationStation()
+    {
         return $this->belongsTo(Station::class, 'destination_station_id');
     }
 }

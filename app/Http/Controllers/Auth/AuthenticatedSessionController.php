@@ -28,7 +28,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Pastikan namanya 'tickets.index' sesuai dengan web.php
+        return redirect()->intended(route('tickets.index', absolute: false));
     }
 
     /**
