@@ -1,22 +1,13 @@
 <?php
 
-// Pastikan folder-folder yang dibutuhkan Laravel ada di /tmp
-$storageFolders = [
-    '/tmp/storage/framework/views',
-    '/tmp/storage/framework/cache',
-    '/tmp/storage/framework/sessions',
-    '/tmp/bootstrap/cache',
-];
-
-foreach ($storageFolders as $folder) {
-    if (!is_dir($folder)) {
-        mkdir($folder, 0777, true);
-    }
+// 1. Buat folder temporary secara paksa
+$tmpFolder = '/tmp/storage/framework/views';
+if (!is_dir($tmpFolder)) {
+    mkdir($tmpFolder, 0777, true);
 }
 
-// Redirect Laravel untuk menggunakan folder /tmp tersebut
-putenv('VIEW_COMPILED_PATH=/tmp/storage/framework/views');
-putenv('CACHE_DRIVER=file');
-putenv('SESSION_DRIVER=file');
+// 2. Set environment variable agar Laravel tahu harus menulis ke mana
+putenv("VIEW_COMPILED_PATH=$tmpFolder");
 
+// 3. Panggil aplikasi utama
 require __DIR__ . '/../public/index.php';
