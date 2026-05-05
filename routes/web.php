@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/tickets/book', 'store')->name('tickets.store');
 
         Route::get('/booking/{id}', 'show')->name('booking.show');
-        Route::post('/booking/{id}/pay', 'pay')->name('booking.pay');
+        Route::post('/booking/{id}/pay', [TicketController::class, 'pay'])->name('booking.pay');
         Route::post('/booking/{id}/cancel', [TicketController::class, 'cancel'])->name('booking.cancel');
     });
 });

@@ -103,50 +103,70 @@ class TicketController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Validasi input dari form pemilihan kursi
         $request->validate([
             'schedule_id' => 'required|exists:schedules,id',
             'seat_ids' => 'required|array',
         ]);
 
+        // 2. Ambil data penumpang yang sebelumnya disimpan di session
         $passengers = session('booking_passengers');
 
+        // 3. Validasi kecocokan jumlah kursi dan jumlah penumpang
         if (count($request->seat_ids) !== count($passengers)) {
             return back()->with('error', 'Jumlah kursi tidak sesuai dengan jumlah penumpang.');
         }
 
+        // 4. Ambil data jadwal untuk mendapatkan harga asli dari Panel Admin
+        $schedule = \App\Models\Schedule::findOrFail($request->schedule_id);
+
         try {
             DB::beginTransaction();
 
-            // UBAH: Gunakan nama variabel $bookingId agar sinkron dengan baris redirect di bawah
+            // 5. Masukkan data ke tabel bookings
+            // Status diset 'pending' agar header berwarna Orange
             $bookingId = DB::table('bookings')->insertGetId([
-                'booking_code' => 'KAI-' . strtoupper(Str::random(10)),
-                'user_id' => Auth::id(),
-                'schedule_id' => $request->schedule_id,
-                'total_price' => count($request->seat_ids) * 30000,
-                'status' => 'success',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'booking_code' => 'REX-' . strtoupper(Str::random(8)),
+                'user_id'      => Auth::id(),
+                'schedule_id'  => $request->schedule_id,
+
+                // Perbaikan: Harga sekarang dinamis (Jumlah Penumpang x Harga di Jadwal)
+                'total_price'  => count($request->seat_ids) * $schedule->price,
+
+                'status'       => 'pending',
+                'created_at'   => now(),
+                'updated_at'   => now(),
             ]);
 
+            // 6. Masukkan detail penumpang dan kursi ke tabel booking_passengers
             foreach ($request->seat_ids as $index => $seatId) {
                 DB::table('booking_passengers')->insert([
-                    'booking_id' => $bookingId, // Pastikan variabelnya sama ($bookingId)
+                    'booking_id' => $bookingId,
                     'seat_id'    => $seatId,
                     'name'       => $passengers[$index]['name'],
                     'nik'        => $passengers[$index]['nik'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                /**
+                 * CATATAN: Baris update 'is_available' dihapus karena
+                 * kolom tersebut tidak ada di tabel 'seats' Anda.
+                 * Sistem pengecekan kursi sudah ditangani oleh join table di selectSeats.
+                 */
             }
 
             DB::commit();
+
+            // 7. Bersihkan session setelah transaksi berhasil
             session()->forget('booking_passengers');
 
-            // Sekarang $bookingId sudah dikenali dan garis merah akan hilang
+            // 8. Redirect ke halaman detail tiket (Header akan otomatis Orange)
             return redirect()->route('booking.show', $bookingId)
-                            ->with('success', 'Kursi berhasil dipesan!');
+                            ->with('success', 'Kursi berhasil dipesan! Silakan selesaikan pembayaran.');
 
         } catch (\Exception $e) {
+            // Jika ada error, batalkan semua perubahan database
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
@@ -156,41 +176,65 @@ class TicketController extends Controller
      * Memperbarui status menjadi dibatalkan (soft/logic cancel).
      */
     public function cancel($id)
-    {
-        $booking = Booking::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
+{
+    // 1. Cari booking milik user yang login
+    $booking = Booking::where('id', $id)
+        ->where('user_id', Auth::id())
+        ->firstOrFail();
 
-        if ($booking->status === 'pending') {
+    // 2. Hanya bisa cancel jika status masih 'pending'
+    if ($booking->status === 'pending') {
+        try {
+            DB::beginTransaction();
+
+            // Ubah status jadi cancelled
             $booking->update(['status' => 'cancelled']);
-            return back()->with('success', 'Pesanan berhasil dibatalkan.');
-        }
 
-        return back()->with('error', 'Pesanan tidak dapat dibatalkan.');
+            // Opsional: Jika kamu ingin menghapus data penumpang agar kursi langsung kosong di peta:
+            // DB::table('booking_passengers')->where('booking_id', $id)->delete();
+
+            DB::commit();
+            return redirect()->route('tickets.index')->with('success', 'Pesanan berhasil dibatalkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal membatalkan pesanan.');
+        }
     }
+
+    return back()->with('error', 'Pesanan ini tidak dapat dibatalkan.');
+}
 
     /**
      * Proses simulasi pembayaran.
      */
     public function pay($id)
     {
-        $booking = Booking::findOrFail($id);
+        // 1. Cari booking milik user yang sedang login untuk keamanan
+        $booking = Booking::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
+        // 2. Hanya proses jika status masih pending
         if ($booking->status !== 'pending') {
-            return back()->with('error', 'Tiket sudah dibayar atau dibatalkan.');
+            return redirect()->back()->with('error', 'Pesanan ini sudah diproses atau dibatalkan.');
         }
 
-        $booking->update(['status' => 'success']);
+        try {
+            DB::beginTransaction();
 
-        // Kirim Email Konfirmasi
-        $user = Auth::user();
-        if ($user && $user->email) {
-            Mail::to($user->email)
-                ->bcc('admin_rail@example.com')
-                ->send(new TicketPaidMail($booking));
+            // 3. Update status jadi success
+            $booking->update(['status' => 'success']);
+
+            // 4. (Opsional) Kirim Email atau Logika Tambahan di sini
+            // Mail::to(Auth::user()->email)->send(new TicketPaidMail($booking));
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Pembayaran Berhasil! Tiket Anda sekarang aktif dan dapat dicetak.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
         }
-
-        return redirect()->back()->with('success', 'Pembayaran berhasil!');
     }
 
     /**
@@ -198,7 +242,8 @@ class TicketController extends Controller
      */
     public function show($id)
     {
-        // WAJIB: Pastikan ada with('passengers.seat') supaya data penumpang & kursi terambil
+        // Menggunakan Eloquent agar relasi 'passengers.seat' terbaca di Blade
+        // Pastikan Model Booking sudah punya relasi passengers()
         $booking = \App\Models\Booking::with(['passengers.seat', 'schedule.train', 'schedule.originStation', 'schedule.destinationStation'])
                     ->findOrFail($id);
 

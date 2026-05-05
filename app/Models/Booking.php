@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Booking extends Model
 {
-    // Isi dengan kolom-kolom yang ada di migration kamu
     protected $fillable = [
         'booking_code',
         'user_id',
@@ -17,12 +16,13 @@ class Booking extends Model
         'status',
     ];
 
-    public function passengers()
+    public function passengers(): HasMany
     {
-        return $this->hasMany(Passenger::class);
+        // Relasi ke tabel booking_passengers
+        return $this->hasMany(BookingPassenger::class, 'booking_id');
     }
 
-    public function schedule()
+    public function schedule(): BelongsTo
     {
         return $this->belongsTo(Schedule::class);
     }
@@ -30,11 +30,5 @@ class Booking extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    // Tambahkan relasi ke Seat agar bisa tahu kursi mana yang dipesan
-    public function seat(): BelongsTo
-    {
-        return $this->belongsTo(Seat::class);
     }
 }

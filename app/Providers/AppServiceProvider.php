@@ -21,8 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // 2. MASUKKAN KODENYA DI SINI (HANYA SATU FUNGSI BOOT)
-        if (env('APP_ENV') !== 'local') {
+        if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
     }
