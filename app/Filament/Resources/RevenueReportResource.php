@@ -42,8 +42,9 @@ class RevenueReportResource extends Resource
                     ->date()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('customer_name') // Asumsi ada kolom ini di tabel Booking
+                Tables\Columns\TextColumn::make('passengers.name')
                     ->label('Nama Penumpang')
+                    ->listWithLineBreaks()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('schedule.train.name')
@@ -52,7 +53,9 @@ class RevenueReportResource extends Resource
                 Tables\Columns\TextColumn::make('total_price')
                     ->label('Total Bayar')
                     ->money('IDR')
-                    ->summarize(Tables\Columns\Summarizers\Sum::make()->label('Total Pendapatan')),
+                    ->summarize(Tables\Columns\Summarizers\Sum::make()
+                    ->label('Total Pendapatan')
+                    ->money('IDR')),
             ])
             ->filters([
                 // Filter berdasarkan tanggal sangat penting untuk laporan

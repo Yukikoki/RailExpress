@@ -265,4 +265,18 @@ class TicketController extends Controller
 
         return redirect()->route('tickets.index')->with('success', 'Data pesanan berhasil dihapus.');
     }
+
+    public function laporan()
+    {
+        // Mengambil booking yang sukses beserta data penumpang dan jadwalnya
+        $bookings = Booking::with(['passengers', 'schedule.train'])
+            ->where('status', 'success')
+            ->latest()
+            ->get();
+
+        // Hitung total pendapatan (opsional untuk ringkasan di bawah tabel)
+        $totalPendapatan = $bookings->sum('total_price');
+
+        return view('admin.laporan-pendapatan', compact('bookings', 'totalPendapatan'));
+    }
 }
