@@ -13,11 +13,9 @@ class ListSeats extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            // 1. Tombol Create Manual
             \Filament\Actions\CreateAction::make()
                 ->modalWidth('md'),
 
-            // 2. Tombol Generate Otomatis
             \Filament\Actions\Action::make('generateSeats')
                 ->label('Generate Seats Otomatis')
                 ->color('success')
@@ -59,9 +57,8 @@ class ListSeats extends ListRecords
                         ->success()
                         ->body('Kursi berhasil di-generate.')
                         ->send();
-                }), // Pastikan ada koma di sini sebelum tombol berikutnya
+                }),
 
-            // 3. Tombol Reset
             \Filament\Actions\Action::make('resetSeats')
                 ->label('Reset Kursi')
                 ->color('danger')

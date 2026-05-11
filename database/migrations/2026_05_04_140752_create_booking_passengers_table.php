@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('booking_passengers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('booking_id')->constrained()->onDelete('cascade');
-            $table->foreignId('seat_id')->constrained(); // Kursi dipindah ke sini
+            $table->foreignId('seat_id')->constrained(); 
             $table->string('name');
             $table->string('nik');
             $table->timestamps();
