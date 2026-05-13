@@ -58,7 +58,6 @@ class RevenueReportResource extends Resource
                     ->money('IDR')),
             ])
             ->filters([
-                // Filter berdasarkan tanggal sangat penting untuk laporan
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         Forms\Components\DatePicker::make('from')->label('Dari Tanggal'),
@@ -70,11 +69,10 @@ class RevenueReportResource extends Resource
                             ->when($data['until'], fn ($q) => $q->whereDate('created_at', '<=', $data['until']));
                     })
             ])
-            ->actions([]) // Kosongkan agar tidak ada tombol Edit/Delete
-            ->bulkActions([]); // Kosongkan atau biarkan hanya Export jika pakai plugin
+            ->actions([])
+            ->bulkActions([]);
     }
 
-    // Tambahkan ini agar menu "Create" hilang dari navigasi
     public static function canCreate(): bool
     {
         return false;
